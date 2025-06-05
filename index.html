@@ -83,6 +83,8 @@
         }
         window.addEventListener('resize', resize);
         resize();
+        initStars();
+        requestAnimationFrame(loop);
 
         // Game objects
         const paddleWidth = 15;
@@ -101,6 +103,20 @@
         const trail = [];
         const maxTrail = 20;
 
+        // Starfield background
+        const numStars = 100;
+        const stars = [];
+        function initStars(){
+            for(let i=0;i<numStars;i++){
+                stars.push({
+                    x: Math.random()*baseWidth,
+                    y: Math.random()*baseHeight,
+                    size: Math.random()*2+1,
+                    speed: Math.random()*1+0.5
+                });
+            }
+        }
+
         // Keyboard input
         const keys = {};
         window.addEventListener('keydown', e => { keys[e.key] = true; if(e.key === ' ') togglePlay(); });
@@ -111,7 +127,6 @@
                 resetBall();
                 msgEl.style.display = 'none';
                 playing = true;
-                requestAnimationFrame(loop);
             } else {
                 playing = false;
                 msgEl.textContent = 'Press SPACE to Play';
@@ -205,21 +220,30 @@
             for(const t of trail) t.opacity *= 0.92; // fade out
         }
 
+        // Move stars downward to create space travel illusion
+        function updateStars(){
+            for(const s of stars){
+                s.y += s.speed;
+                if(s.y > baseHeight){
+                    s.y = 0;
+                    s.x = Math.random() * baseWidth;
+                }
+            }
+        }
+
         // Draw everything on canvas
         function draw(){
-            ctx.clearRect(0,0,baseWidth,baseHeight);
-
-            // optional subtle grid background
-            ctx.strokeStyle='rgba(0,255,255,0.1)';
-            ctx.lineWidth=1;
-            for(let i=0;i<baseWidth;i+=40){
+            // background with moving starfield
+            ctx.fillStyle='#000';
+            ctx.fillRect(0,0,baseWidth,baseHeight);
+            ctx.fillStyle='#fff';
+            for(const s of stars){
+                ctx.globalAlpha = s.size/3;
                 ctx.beginPath();
-                ctx.moveTo(i,0);ctx.lineTo(i,baseHeight);ctx.stroke();
+                ctx.arc(s.x,s.y,s.size,0,Math.PI*2);
+                ctx.fill();
             }
-            for(let j=0;j<baseHeight;j+=40){
-                ctx.beginPath();
-                ctx.moveTo(0,j);ctx.lineTo(baseWidth,j);ctx.stroke();
-            }
+            ctx.globalAlpha = 1;
 
             // Draw particle trail
             for(const t of trail){
@@ -257,10 +281,12 @@
 
         // Game loop
         function loop(){
-            if(!playing) return; // stop loop if paused
-            updatePaddles();
-            updateBall();
-            addTrail();
+            updateStars();
+            if(playing){
+                updatePaddles();
+                updateBall();
+                addTrail();
+            }
             draw();
             requestAnimationFrame(loop);
         }
